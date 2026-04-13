@@ -1,4 +1,3 @@
 @echo off
 title RemateWeb GC Trigger
-python app.py
-pause
+start "" pythonw app.pyw
