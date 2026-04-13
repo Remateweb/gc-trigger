@@ -9,6 +9,7 @@ CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.j
 DEFAULT_CONFIG = {
     "vmix_url": "http://127.0.0.1:8088/api",
     "api_key": "",
+    "api_url": "https://test.api-net9.remateweb.com/api/ocr/bid",
     "selected_title": "",
     "field_auction_id": "",
     "field_lot_number": "",

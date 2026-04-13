@@ -53,6 +53,7 @@ class VmixMonitor:
         field_value = self.config.get("field_value", "")
         field_auction = self.config.get("field_auction_id", "")
         api_key = self.config.get("api_key", "")
+        api_url = self.config.get("api_url", "")
 
         if not all([vmix_url, title_key, field_lot]):
             self.on_log("⚠️ Configuração incompleta (URL, Title ou Lote)")
@@ -99,7 +100,7 @@ class VmixMonitor:
 
                     # Disparar webhook
                     try:
-                        result = post_bid(api_key, auction_id, current_lot, value)
+                        result = post_bid(api_key, auction_id, current_lot, value, api_url=api_url)
                         status = result.get("status", "?")
                         self.on_log(f"✅ API respondeu: {status}")
                         self.on_bid_sent({
