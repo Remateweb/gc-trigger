@@ -53,8 +53,8 @@ class VmixMonitor:
         title_key = self.config.get("selected_title", "")
         field_lot = self.config.get("field_lot_number", "")
         field_value = self.config.get("field_value", "")
-        field_auction = self.config.get("field_auction_id", "")
         field_payment = self.config.get("field_payment_condition", "")
+        auction_id = int(self.config.get("auction_id", 0) or 0)
         api_key = self.config.get("api_key", "")
         api_url = self.config.get("api_url", "")
 
@@ -80,9 +80,6 @@ class VmixMonitor:
                     # Title saiu do ar → enviar null
                     now = datetime.now().strftime("%H:%M:%S")
                     self.on_log(f"📴 [{now}] Title saiu do ar — enviando null")
-
-                    raw_auction = get_field_value(root, title_key, field_auction) or "0"
-                    auction_id = clean_auction_id(raw_auction)
 
                     try:
                         result = post_bid(api_key, auction_id, None, 0, payment_condition="", api_url=api_url)
@@ -130,11 +127,9 @@ class VmixMonitor:
 
                     # Ler valores atuais
                     raw_value = get_field_value(root, title_key, field_value) or "0"
-                    raw_auction = get_field_value(root, title_key, field_auction) or "0"
                     raw_payment = get_field_value(root, title_key, field_payment) or "" if field_payment else ""
 
                     value = clean_value(raw_value)
-                    auction_id = clean_auction_id(raw_auction)
                     payment_condition = raw_payment.strip()
 
                     self.on_log(f"📤 Enviando: auction={auction_id} lote={current_lot} valor={value} pgto={payment_condition or '—'}")

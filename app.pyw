@@ -69,6 +69,14 @@ class App(ctk.CTk):
         )
         self.status_label.pack(side="right", padx=20)
 
+        # Botão engrenagem (config API)
+        gear_btn = ctk.CTkButton(
+            header, text="⚙", font=("Inter", 18), width=40, height=36,
+            fg_color="transparent", hover_color=BORDER_COLOR, text_color=TEXT_SECONDARY,
+            command=self._open_settings_popup,
+        )
+        gear_btn.pack(side="right")
+
         # ── Scrollable content
         scroll = ctk.CTkScrollableFrame(self, fg_color=BG_DARK)
         scroll.pack(fill="both", expand=True, padx=16, pady=16)
@@ -111,23 +119,29 @@ class App(ctk.CTk):
         )
         self.title_combo.pack(fill="x", pady=(0, 16))
 
+        # ── Auction ID (manual — não vem do vMix)
+        auction_row = ctk.CTkFrame(card_map, fg_color="transparent")
+        auction_row.pack(fill="x", pady=(0, 16))
+
+        ctk.CTkLabel(auction_row, text="AUCTION ID (manual):", font=("Inter", 10, "bold"),
+                     text_color=TEXT_MUTED).pack(side="left")
+        self.auction_id_entry = ctk.CTkEntry(
+            auction_row, height=34, width=180, placeholder_text="Ex: 8934",
+            fg_color=BG_INPUT, border_color=BORDER_COLOR, text_color=TEXT_PRIMARY,
+            font=("Inter", 12, "bold"),
+        )
+        self.auction_id_entry.pack(side="left", padx=(8, 0))
+        saved_auction = self.config.get("auction_id", "")
+        if saved_auction:
+            self.auction_id_entry.insert(0, str(saved_auction))
+
+        # ── Mapeamento de campos do vMix
         fields_frame = ctk.CTkFrame(card_map, fg_color="transparent")
         fields_frame.pack(fill="x")
-        fields_frame.columnconfigure((0, 1), weight=1, uniform="col")
-
-        f1 = ctk.CTkFrame(fields_frame, fg_color="transparent")
-        f1.grid(row=0, column=0, padx=(0, 6), pady=(0, 8), sticky="nsew")
-        ctk.CTkLabel(f1, text="AUCTION ID", font=("Inter", 10, "bold"), text_color=TEXT_MUTED).pack(anchor="w")
-        self.field_auction_combo = ctk.CTkComboBox(
-            f1, values=["—"], font=("Inter", 11), height=34,
-            fg_color=BG_INPUT, border_color=BORDER_COLOR, text_color=TEXT_PRIMARY,
-            button_color=BRAND_COLOR, button_hover_color=BRAND_HOVER,
-            dropdown_fg_color=BG_CARD, dropdown_text_color=TEXT_PRIMARY,
-        )
-        self.field_auction_combo.pack(fill="x", pady=(4, 0))
+        fields_frame.columnconfigure((0, 1, 2), weight=1, uniform="col")
 
         f2 = ctk.CTkFrame(fields_frame, fg_color="transparent")
-        f2.grid(row=0, column=1, padx=(6, 0), pady=(0, 8), sticky="nsew")
+        f2.grid(row=0, column=0, padx=(0, 6), sticky="nsew")
         ctk.CTkLabel(f2, text="LOT NUMBER (GATILHO)", font=("Inter", 10, "bold"), text_color=YELLOW).pack(anchor="w")
         self.field_lot_combo = ctk.CTkComboBox(
             f2, values=["—"], font=("Inter", 11), height=34,
@@ -138,7 +152,7 @@ class App(ctk.CTk):
         self.field_lot_combo.pack(fill="x", pady=(4, 0))
 
         f3 = ctk.CTkFrame(fields_frame, fg_color="transparent")
-        f3.grid(row=1, column=0, padx=(0, 6), sticky="nsew")
+        f3.grid(row=0, column=1, padx=6, sticky="nsew")
         ctk.CTkLabel(f3, text="VALUE (R$)", font=("Inter", 10, "bold"), text_color=GREEN).pack(anchor="w")
         self.field_value_combo = ctk.CTkComboBox(
             f3, values=["—"], font=("Inter", 11), height=34,
@@ -149,7 +163,7 @@ class App(ctk.CTk):
         self.field_value_combo.pack(fill="x", pady=(4, 0))
 
         f4 = ctk.CTkFrame(fields_frame, fg_color="transparent")
-        f4.grid(row=1, column=1, padx=(6, 0), sticky="nsew")
+        f4.grid(row=0, column=2, padx=(6, 0), sticky="nsew")
         ctk.CTkLabel(f4, text="COND. PAGAMENTO", font=("Inter", 10, "bold"), text_color=TEXT_SECONDARY).pack(anchor="w")
         self.field_payment_combo = ctk.CTkComboBox(
             f4, values=["—"], font=("Inter", 11), height=34,
@@ -160,26 +174,12 @@ class App(ctk.CTk):
         self.field_payment_combo.pack(fill="x", pady=(4, 0))
 
         # Restore saved field mappings
-        if self.config.get("field_auction_id"):
-            self.field_auction_combo.set(self.config["field_auction_id"])
         if self.config.get("field_lot_number"):
             self.field_lot_combo.set(self.config["field_lot_number"])
         if self.config.get("field_value"):
             self.field_value_combo.set(self.config["field_value"])
         if self.config.get("field_payment_condition"):
             self.field_payment_combo.set(self.config["field_payment_condition"])
-
-        # ── Card: Configuração API (PROTEGIDO — requer login)
-        card_api = self._card(scroll, "🔒 Configuração API (requer login)")
-
-        # Container para o conteúdo protegido
-        self.api_config_content = ctk.CTkFrame(card_api, fg_color="transparent")
-        self.api_config_content.pack(fill="x")
-
-        if self.is_authenticated:
-            self._show_api_config_unlocked()
-        else:
-            self._show_api_config_locked()
 
         # ── Botões de ação
         btn_frame = ctk.CTkFrame(scroll, fg_color="transparent")
@@ -195,8 +195,8 @@ class App(ctk.CTk):
 
         self.stop_btn = ctk.CTkButton(
             btn_frame, text="⏹ Parar",
-            font=("Inter", 14, "bold"), height=48, width=120,
-            fg_color=RED, hover_color="#FF4444", text_color="#FFF",
+            font=("Inter", 14, "bold"), height=48, width=140,
+            fg_color="#CC3333", hover_color="#AA2222", text_color="#FFFFFF",
             state="disabled",
             command=self._stop_monitoring,
         )
@@ -217,134 +217,130 @@ class App(ctk.CTk):
             self.after(500, self._connect_vmix)
 
     # ============================================================
-    # API Config — Protegido por login
+    # API Config — Popup protegido por login
     # ============================================================
-    def _show_api_config_locked(self):
-        """Mostra estado bloqueado do card de API."""
-        for w in self.api_config_content.winfo_children():
-            w.destroy()
+    def _open_settings_popup(self):
+        """Abre popup de configurações da API."""
+        popup = ctk.CTkToplevel(self)
+        popup.title("⚙ Configurações API")
+        popup.geometry("500x420")
+        popup.configure(fg_color=BG_DARK)
+        popup.resizable(False, False)
+        popup.grab_set()  # Modal
+        popup.after(100, popup.lift)
 
-        # Mostrar API Key salva (mascarada) + API URL se existirem
-        saved_key = self.config.get("api_key", "")
-        saved_url = self.config.get("api_url", "https://test.api-net9.remateweb.com/api/ocr/bid")
+        # Guardar referência
+        self._settings_popup = popup
 
-        if saved_key:
-            info = ctk.CTkFrame(self.api_config_content, fg_color="transparent")
-            info.pack(fill="x", pady=(0, 8))
-            masked = saved_key[:8] + "•" * (len(saved_key) - 8) if len(saved_key) > 8 else "•" * len(saved_key)
-            ctk.CTkLabel(info, text=f"API Key: {masked}", font=("Inter", 11),
-                         text_color=TEXT_SECONDARY).pack(anchor="w")
-            ctk.CTkLabel(info, text=f"Endpoint: {saved_url}", font=("Inter", 11),
-                         text_color=TEXT_MUTED).pack(anchor="w")
+        container = ctk.CTkFrame(popup, fg_color=BG_CARD, corner_radius=12,
+                                  border_width=1, border_color=BORDER_COLOR)
+        container.pack(fill="both", expand=True, padx=16, pady=16)
 
-        # Inline login
-        login_frame = ctk.CTkFrame(self.api_config_content, fg_color=BG_INPUT, corner_radius=8,
-                                    border_width=1, border_color=BORDER_COLOR)
-        login_frame.pack(fill="x", pady=(4, 0))
+        ctk.CTkLabel(container, text="🔒 Configuração API",
+                     font=("Inter", 16, "bold"), text_color=TEXT_PRIMARY).pack(padx=20, pady=(16, 12))
 
-        ctk.CTkLabel(login_frame, text="Faça login para editar a configuração da API",
-                     font=("Inter", 11), text_color=TEXT_MUTED).pack(padx=12, pady=(10, 6))
+        if self.is_authenticated:
+            self._build_settings_unlocked(container)
+        else:
+            self._build_settings_login(container)
 
-        row_login = ctk.CTkFrame(login_frame, fg_color="transparent")
-        row_login.pack(fill="x", padx=12, pady=(0, 4))
+    def _build_settings_login(self, container):
+        """Formulário de login dentro do popup."""
+        ctk.CTkLabel(container, text="Faça login para editar a configuração",
+                     font=("Inter", 11), text_color=TEXT_MUTED).pack(padx=20, pady=(0, 12))
 
-        self.inline_email = ctk.CTkEntry(
-            row_login, placeholder_text="E-mail", height=34, width=180,
-            fg_color=BG_DARK, border_color=BORDER_COLOR, text_color=TEXT_PRIMARY,
-            font=("Inter", 11),
+        # Email
+        ctk.CTkLabel(container, text="E-MAIL", font=("Inter", 10, "bold"),
+                     text_color=TEXT_MUTED).pack(padx=20, anchor="w")
+        email_entry = ctk.CTkEntry(
+            container, height=36, placeholder_text="seu@email.com",
+            fg_color=BG_INPUT, border_color=BORDER_COLOR, text_color=TEXT_PRIMARY,
+            font=("Inter", 12),
         )
-        self.inline_email.pack(side="left", padx=(0, 6))
+        email_entry.pack(fill="x", padx=20, pady=(4, 8))
 
-        self.inline_password = ctk.CTkEntry(
-            row_login, placeholder_text="Senha", show="•", height=34, width=150,
-            fg_color=BG_DARK, border_color=BORDER_COLOR, text_color=TEXT_PRIMARY,
-            font=("Inter", 11),
+        # Senha
+        ctk.CTkLabel(container, text="SENHA", font=("Inter", 10, "bold"),
+                     text_color=TEXT_MUTED).pack(padx=20, anchor="w")
+        pass_entry = ctk.CTkEntry(
+            container, height=36, placeholder_text="Digite sua senha", show="•",
+            fg_color=BG_INPUT, border_color=BORDER_COLOR, text_color=TEXT_PRIMARY,
+            font=("Inter", 12),
         )
-        self.inline_password.pack(side="left", padx=(0, 6))
+        pass_entry.pack(fill="x", padx=20, pady=(4, 8))
 
-        self.inline_login_btn = ctk.CTkButton(
-            row_login, text="🔓 Desbloquear", font=("Inter", 11, "bold"), height=34, width=130,
+        error_label = ctk.CTkLabel(container, text="", font=("Inter", 10), text_color=RED)
+        error_label.pack(padx=20)
+
+        login_btn = ctk.CTkButton(
+            container, text="🔓 Desbloquear", font=("Inter", 13, "bold"), height=40,
             fg_color=BRAND_COLOR, hover_color=BRAND_HOVER,
-            command=self._do_inline_login,
         )
-        self.inline_login_btn.pack(side="left")
+        login_btn.pack(fill="x", padx=20, pady=(8, 20))
 
-        self.inline_error = ctk.CTkLabel(login_frame, text="", font=("Inter", 10), text_color=RED)
-        self.inline_error.pack(padx=12, pady=(0, 10))
+        def _do_login():
+            email = email_entry.get().strip()
+            password = pass_entry.get().strip()
+            if not email or not password:
+                error_label.configure(text="Preencha e-mail e senha")
+                return
+            login_btn.configure(state="disabled", text="Verificando...")
+            error_label.configure(text="")
 
-        # Bind Enter
-        self.inline_password.bind("<Return>", lambda e: self._do_inline_login())
+            def _auth():
+                try:
+                    login(email, password)
+                    self.is_authenticated = True
+                    self.after(0, lambda: self._settings_popup.destroy())
+                    self.after(100, self._open_settings_popup)
+                    self.after(0, lambda: self._log("🔓 Login realizado — config desbloqueada"))
+                except Exception as e:
+                    self.after(0, lambda: error_label.configure(text=str(e)))
+                    self.after(0, lambda: login_btn.configure(state="normal", text="🔓 Desbloquear"))
 
-    def _do_inline_login(self):
-        """Login inline para desbloquear a configuração da API."""
-        email = self.inline_email.get().strip()
-        password = self.inline_password.get().strip()
+            threading.Thread(target=_auth, daemon=True).start()
 
-        if not email or not password:
-            self.inline_error.configure(text="Preencha e-mail e senha")
-            return
+        login_btn.configure(command=_do_login)
+        pass_entry.bind("<Return>", lambda e: _do_login())
 
-        self.inline_login_btn.configure(state="disabled", text="Verificando...")
-        self.inline_error.configure(text="")
-
-        def _auth():
-            try:
-                login(email, password)
-                self.is_authenticated = True
-                self.after(0, self._show_api_config_unlocked)
-                self.after(0, lambda: self._log("🔓 Login realizado — API desbloqueada"))
-            except Exception as e:
-                self.after(0, lambda: self.inline_error.configure(text=str(e)))
-                self.after(0, lambda: self.inline_login_btn.configure(state="normal", text="🔓 Desbloquear"))
-
-        threading.Thread(target=_auth, daemon=True).start()
-
-    def _show_api_config_unlocked(self):
-        """Mostra o formulário completo de configuração da API."""
-        for w in self.api_config_content.winfo_children():
-            w.destroy()
-
-        ctk.CTkLabel(self.api_config_content, text="✅ Autenticado — configure a API abaixo",
-                     font=("Inter", 11, "bold"), text_color=GREEN).pack(anchor="w", pady=(0, 8))
+    def _build_settings_unlocked(self, container):
+        """Formulário de API key/URL desbloqueado."""
+        ctk.CTkLabel(container, text="✅ Autenticado",
+                     font=("Inter", 11, "bold"), text_color=GREEN).pack(padx=20, pady=(0, 12))
 
         # API Key
-        ctk.CTkLabel(self.api_config_content, text="API KEY",
-                     font=("Inter", 10, "bold"), text_color=TEXT_MUTED).pack(anchor="w")
-        self.api_key_entry = ctk.CTkEntry(
-            self.api_config_content, height=36, fg_color=BG_INPUT, border_color=BORDER_COLOR,
+        ctk.CTkLabel(container, text="API KEY", font=("Inter", 10, "bold"),
+                     text_color=TEXT_MUTED).pack(padx=20, anchor="w")
+        api_key_entry = ctk.CTkEntry(
+            container, height=36, fg_color=BG_INPUT, border_color=BORDER_COLOR,
             text_color=TEXT_PRIMARY, font=("Inter", 12),
         )
-        self.api_key_entry.pack(fill="x", pady=(4, 12))
-        self.api_key_entry.insert(0, self.config.get("api_key", ""))
+        api_key_entry.pack(fill="x", padx=20, pady=(4, 12))
+        api_key_entry.insert(0, self.config.get("api_key", ""))
 
-        # API URL (endpoint)
-        ctk.CTkLabel(self.api_config_content, text="API ENDPOINT (URL de envio dos lotes)",
-                     font=("Inter", 10, "bold"), text_color=TEXT_MUTED).pack(anchor="w")
-        self.api_url_entry = ctk.CTkEntry(
-            self.api_config_content, height=36, fg_color=BG_INPUT, border_color=BORDER_COLOR,
+        # API URL
+        ctk.CTkLabel(container, text="API ENDPOINT", font=("Inter", 10, "bold"),
+                     text_color=TEXT_MUTED).pack(padx=20, anchor="w")
+        api_url_entry = ctk.CTkEntry(
+            container, height=36, fg_color=BG_INPUT, border_color=BORDER_COLOR,
             text_color=TEXT_PRIMARY, font=("Inter", 12),
         )
-        self.api_url_entry.pack(fill="x", pady=(4, 8))
-        self.api_url_entry.insert(0, self.config.get("api_url", "https://test.api-net9.remateweb.com/api/ocr/bid"))
+        api_url_entry.pack(fill="x", padx=20, pady=(4, 16))
+        api_url_entry.insert(0, self.config.get("api_url", "https://test.api-net9.remateweb.com/api/ocr/bid"))
 
-        # Botão salvar API config
-        save_api_btn = ctk.CTkButton(
-            self.api_config_content, text="💾 Salvar Configuração API",
-            font=("Inter", 12, "bold"), height=36,
+        def _save():
+            self.config["api_key"] = api_key_entry.get().strip()
+            self.config["api_url"] = api_url_entry.get().strip()
+            save_config(self.config)
+            self._log("💾 Configuração API salva")
+            self._settings_popup.destroy()
+
+        save_btn = ctk.CTkButton(
+            container, text="💾 Salvar", font=("Inter", 13, "bold"), height=42,
             fg_color=BRAND_COLOR, hover_color=BRAND_HOVER,
-            command=self._save_api_config,
+            command=_save,
         )
-        save_api_btn.pack(anchor="w", pady=(4, 0))
-
-    def _save_api_config(self):
-        """Salva API key e URL no config.json."""
-        api_key = self.api_key_entry.get().strip()
-        api_url = self.api_url_entry.get().strip()
-
-        self.config["api_key"] = api_key
-        self.config["api_url"] = api_url
-        save_config(self.config)
-        self._log("💾 Configuração da API salva")
+        save_btn.pack(fill="x", padx=20, pady=(0, 20))
 
     # ============================================================
     # Cards helper
@@ -426,19 +422,12 @@ class App(ctk.CTk):
         if not field_names:
             field_names = ["(sem campos)"]
 
-        self.field_auction_combo.configure(values=field_names)
         self.field_lot_combo.configure(values=field_names)
         self.field_value_combo.configure(values=field_names)
         self.field_payment_combo.configure(values=["—"] + field_names)
 
-        saved_auction = self.config.get("field_auction_id", "")
         saved_lot = self.config.get("field_lot_number", "")
         saved_value = self.config.get("field_value", "")
-
-        if saved_auction in field_names:
-            self.field_auction_combo.set(saved_auction)
-        elif field_names[0] != "(sem campos)":
-            self.field_auction_combo.set(field_names[0])
 
         if saved_lot in field_names:
             self.field_lot_combo.set(saved_lot)
@@ -465,13 +454,16 @@ class App(ctk.CTk):
         vmix_url = self.vmix_url_entry.get().strip()
         lot_field = self.field_lot_combo.get()
         value_field = self.field_value_combo.get()
-        auction_field = self.field_auction_combo.get()
+        auction_id_str = self.auction_id_entry.get().strip()
         payment_field = self.field_payment_combo.get()
         if payment_field == "—":
             payment_field = ""
 
         if not api_key:
             self._log("❌ API Key não configurada — faça login e configure a API primeiro")
+            return
+        if not auction_id_str:
+            self._log("❌ Preencha o Auction ID")
             return
         if lot_field in ("—", "(sem campos)"):
             self._log("❌ Selecione o campo de Lote (gatilho)")
@@ -492,7 +484,7 @@ class App(ctk.CTk):
         self.config.update({
             "vmix_url": vmix_url,
             "selected_title": title_key,
-            "field_auction_id": auction_field,
+            "auction_id": auction_id_str,
             "field_lot_number": lot_field,
             "field_value": value_field,
             "field_payment_condition": payment_field,
