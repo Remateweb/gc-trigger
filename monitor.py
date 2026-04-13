@@ -3,6 +3,7 @@ Monitor Engine — Thread de background que monitora o vMix e dispara webhooks.
 """
 import time
 import threading
+from typing import Optional
 from datetime import datetime
 
 from vmix_client import fetch_vmix_xml, get_field_value
@@ -19,8 +20,8 @@ class VmixMonitor:
         self.on_bid_sent = on_bid_sent or (lambda d: None)
 
         self._running = False
-        self._thread: threading.Thread | None = None
-        self._last_lot: str | None = None
+        self._thread: Optional[threading.Thread] = None
+        self._last_lot: Optional[str] = None
         self._poll_interval = 1.0  # segundos
 
     @property

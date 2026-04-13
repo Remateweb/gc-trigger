@@ -2,10 +2,11 @@
 vMix Client — Lê e parseia o XML da API do vMix.
 """
 import xml.etree.ElementTree as ET
+from typing import Optional, List, Dict
 import requests
 
 
-def fetch_vmix_xml(vmix_url: str, timeout: int = 5) -> ET.Element | None:
+def fetch_vmix_xml(vmix_url: str, timeout: int = 5) -> Optional[ET.Element]:
     """Faz GET na API do vMix e retorna o XML root."""
     try:
         resp = requests.get(vmix_url, timeout=timeout)
@@ -21,7 +22,7 @@ def fetch_vmix_xml(vmix_url: str, timeout: int = 5) -> ET.Element | None:
         raise ConnectionError(f"vMix retornou erro: {e.response.status_code}")
 
 
-def get_title_inputs(root: ET.Element) -> list[dict]:
+def get_title_inputs(root: ET.Element) -> List[Dict]:
     """Extrai todos os inputs do tipo 'GT' ou 'Title' do XML do vMix.
     Retorna lista de {key, title, number, fields: [{name, value}]}."""
     titles = []
@@ -55,7 +56,7 @@ def get_title_inputs(root: ET.Element) -> list[dict]:
     return titles
 
 
-def get_field_value(root: ET.Element, title_key: str, field_name: str) -> str | None:
+def get_field_value(root: ET.Element, title_key: str, field_name: str) -> Optional[str]:
     """Lê o valor atual de um campo específico dentro de um Title."""
     inputs_el = root.find(".//inputs")
     if inputs_el is None:

@@ -42,7 +42,7 @@ class App(ctk.CTk):
         self.configure(fg_color=BG_DARK)
 
         self.config = load_config()
-        self.monitor: VmixMonitor | None = None
+        self.monitor = None  # type: VmixMonitor | None
         self.titles_data: list = []
         self.access_token: str = ""
 
