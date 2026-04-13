@@ -77,7 +77,7 @@ def clean_auction_id(raw: str) -> int:
         return 0
 
 
-def post_bid(api_key: str, auction_id: int, lot_number: str, value: float, api_url: str = "", timeout: int = 10) -> dict:
+def post_bid(api_key: str, auction_id: int, lot_number: str, value: float, payment_condition: str = "", api_url: str = "", timeout: int = 10) -> dict:
     """Envia dados do lance para a API RemateWeb.
     Retorna response dict em caso de sucesso."""
     url = api_url or BID_URL
@@ -86,6 +86,7 @@ def post_bid(api_key: str, auction_id: int, lot_number: str, value: float, api_u
         "auctionId": auction_id,
         "lotNumber": lot_number if lot_number and lot_number != "0" else None,
         "value": value,
+        "paymentCondition": payment_condition if payment_condition else None,
     }
 
     try:

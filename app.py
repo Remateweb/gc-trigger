@@ -113,10 +113,10 @@ class App(ctk.CTk):
 
         fields_frame = ctk.CTkFrame(card_map, fg_color="transparent")
         fields_frame.pack(fill="x")
-        fields_frame.columnconfigure((0, 1, 2), weight=1, uniform="col")
+        fields_frame.columnconfigure((0, 1), weight=1, uniform="col")
 
         f1 = ctk.CTkFrame(fields_frame, fg_color="transparent")
-        f1.grid(row=0, column=0, padx=(0, 6), sticky="nsew")
+        f1.grid(row=0, column=0, padx=(0, 6), pady=(0, 8), sticky="nsew")
         ctk.CTkLabel(f1, text="AUCTION ID", font=("Inter", 10, "bold"), text_color=TEXT_MUTED).pack(anchor="w")
         self.field_auction_combo = ctk.CTkComboBox(
             f1, values=["—"], font=("Inter", 11), height=34,
@@ -127,7 +127,7 @@ class App(ctk.CTk):
         self.field_auction_combo.pack(fill="x", pady=(4, 0))
 
         f2 = ctk.CTkFrame(fields_frame, fg_color="transparent")
-        f2.grid(row=0, column=1, padx=6, sticky="nsew")
+        f2.grid(row=0, column=1, padx=(6, 0), pady=(0, 8), sticky="nsew")
         ctk.CTkLabel(f2, text="LOT NUMBER (GATILHO)", font=("Inter", 10, "bold"), text_color=YELLOW).pack(anchor="w")
         self.field_lot_combo = ctk.CTkComboBox(
             f2, values=["—"], font=("Inter", 11), height=34,
@@ -138,7 +138,7 @@ class App(ctk.CTk):
         self.field_lot_combo.pack(fill="x", pady=(4, 0))
 
         f3 = ctk.CTkFrame(fields_frame, fg_color="transparent")
-        f3.grid(row=0, column=2, padx=(6, 0), sticky="nsew")
+        f3.grid(row=1, column=0, padx=(0, 6), sticky="nsew")
         ctk.CTkLabel(f3, text="VALUE (R$)", font=("Inter", 10, "bold"), text_color=GREEN).pack(anchor="w")
         self.field_value_combo = ctk.CTkComboBox(
             f3, values=["—"], font=("Inter", 11), height=34,
@@ -148,6 +148,17 @@ class App(ctk.CTk):
         )
         self.field_value_combo.pack(fill="x", pady=(4, 0))
 
+        f4 = ctk.CTkFrame(fields_frame, fg_color="transparent")
+        f4.grid(row=1, column=1, padx=(6, 0), sticky="nsew")
+        ctk.CTkLabel(f4, text="COND. PAGAMENTO", font=("Inter", 10, "bold"), text_color=TEXT_SECONDARY).pack(anchor="w")
+        self.field_payment_combo = ctk.CTkComboBox(
+            f4, values=["—"], font=("Inter", 11), height=34,
+            fg_color=BG_INPUT, border_color=BORDER_COLOR, text_color=TEXT_PRIMARY,
+            button_color=BRAND_COLOR, button_hover_color=BRAND_HOVER,
+            dropdown_fg_color=BG_CARD, dropdown_text_color=TEXT_PRIMARY,
+        )
+        self.field_payment_combo.pack(fill="x", pady=(4, 0))
+
         # Restore saved field mappings
         if self.config.get("field_auction_id"):
             self.field_auction_combo.set(self.config["field_auction_id"])
@@ -155,6 +166,8 @@ class App(ctk.CTk):
             self.field_lot_combo.set(self.config["field_lot_number"])
         if self.config.get("field_value"):
             self.field_value_combo.set(self.config["field_value"])
+        if self.config.get("field_payment_condition"):
+            self.field_payment_combo.set(self.config["field_payment_condition"])
 
         # ── Card: Configuração API (PROTEGIDO — requer login)
         card_api = self._card(scroll, "🔒 Configuração API (requer login)")
@@ -416,6 +429,7 @@ class App(ctk.CTk):
         self.field_auction_combo.configure(values=field_names)
         self.field_lot_combo.configure(values=field_names)
         self.field_value_combo.configure(values=field_names)
+        self.field_payment_combo.configure(values=["—"] + field_names)
 
         saved_auction = self.config.get("field_auction_id", "")
         saved_lot = self.config.get("field_lot_number", "")
@@ -436,6 +450,12 @@ class App(ctk.CTk):
         elif len(field_names) > 2:
             self.field_value_combo.set(field_names[2])
 
+        saved_payment = self.config.get("field_payment_condition", "")
+        if saved_payment in field_names:
+            self.field_payment_combo.set(saved_payment)
+        else:
+            self.field_payment_combo.set("—")
+
     # ============================================================
     # Monitoring
     # ============================================================
@@ -446,6 +466,9 @@ class App(ctk.CTk):
         lot_field = self.field_lot_combo.get()
         value_field = self.field_value_combo.get()
         auction_field = self.field_auction_combo.get()
+        payment_field = self.field_payment_combo.get()
+        if payment_field == "—":
+            payment_field = ""
 
         if not api_key:
             self._log("❌ API Key não configurada — faça login e configure a API primeiro")
@@ -472,6 +495,7 @@ class App(ctk.CTk):
             "field_auction_id": auction_field,
             "field_lot_number": lot_field,
             "field_value": value_field,
+            "field_payment_condition": payment_field,
         })
         save_config(self.config)
         self._log("💾 Configurações de mapeamento salvas")

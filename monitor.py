@@ -54,6 +54,7 @@ class VmixMonitor:
         field_lot = self.config.get("field_lot_number", "")
         field_value = self.config.get("field_value", "")
         field_auction = self.config.get("field_auction_id", "")
+        field_payment = self.config.get("field_payment_condition", "")
         api_key = self.config.get("api_key", "")
         api_url = self.config.get("api_url", "")
 
@@ -84,7 +85,7 @@ class VmixMonitor:
                     auction_id = clean_auction_id(raw_auction)
 
                     try:
-                        result = post_bid(api_key, auction_id, None, 0, api_url=api_url)
+                        result = post_bid(api_key, auction_id, None, 0, payment_condition="", api_url=api_url)
                         status = result.get("status", "?")
                         self.on_log(f"✅ API respondeu (null): {status}")
                         self.on_bid_sent({
@@ -130,15 +131,17 @@ class VmixMonitor:
                     # Ler valores atuais
                     raw_value = get_field_value(root, title_key, field_value) or "0"
                     raw_auction = get_field_value(root, title_key, field_auction) or "0"
+                    raw_payment = get_field_value(root, title_key, field_payment) or "" if field_payment else ""
 
                     value = clean_value(raw_value)
                     auction_id = clean_auction_id(raw_auction)
+                    payment_condition = raw_payment.strip()
 
-                    self.on_log(f"📤 Enviando: auction={auction_id} lote={current_lot} valor={value}")
+                    self.on_log(f"📤 Enviando: auction={auction_id} lote={current_lot} valor={value} pgto={payment_condition or '—'}")
 
                     # Disparar webhook
                     try:
-                        result = post_bid(api_key, auction_id, current_lot, value, api_url=api_url)
+                        result = post_bid(api_key, auction_id, current_lot, value, payment_condition=payment_condition, api_url=api_url)
                         status = result.get("status", "?")
                         self.on_log(f"✅ API respondeu: {status}")
                         self.on_bid_sent({
