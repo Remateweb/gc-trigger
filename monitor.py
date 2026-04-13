@@ -6,7 +6,7 @@ import threading
 from typing import Optional
 from datetime import datetime
 
-from vmix_client import fetch_vmix_xml, get_field_value
+from vmix_client import fetch_vmix_xml, get_field_value, is_input_on_air
 from api_client import post_bid, clean_value, clean_auction_id
 
 
@@ -22,6 +22,7 @@ class VmixMonitor:
         self._running = False
         self._thread: Optional[threading.Thread] = None
         self._last_lot: Optional[str] = None
+        self._last_on_air: Optional[bool] = None
         self._poll_interval = 1.0  # segundos
 
     @property
@@ -34,6 +35,7 @@ class VmixMonitor:
             return
         self._running = True
         self._last_lot = None
+        self._last_on_air = None
         self._thread = threading.Thread(target=self._loop, daemon=True)
         self._thread.start()
         self.on_log("Monitoramento iniciado")
@@ -68,6 +70,42 @@ class VmixMonitor:
                 root = fetch_vmix_xml(vmix_url)
                 if root is None:
                     raise ConnectionError("XML vazio")
+
+                # Verificar se o Title está no ar
+                on_air = is_input_on_air(root, title_key)
+
+                # Detectar mudança de estado on/off air
+                if self._last_on_air is not None and self._last_on_air and not on_air:
+                    # Title saiu do ar → enviar null
+                    now = datetime.now().strftime("%H:%M:%S")
+                    self.on_log(f"📴 [{now}] Title saiu do ar — enviando null")
+
+                    raw_auction = get_field_value(root, title_key, field_auction) or "0"
+                    auction_id = clean_auction_id(raw_auction)
+
+                    try:
+                        result = post_bid(api_key, auction_id, None, 0, api_url=api_url)
+                        status = result.get("status", "?")
+                        self.on_log(f"✅ API respondeu (null): {status}")
+                        self.on_bid_sent({
+                            "time": now, "lot": None, "value": 0,
+                            "auction_id": auction_id, "status": status,
+                        })
+                    except Exception as e:
+                        self.on_log(f"❌ Erro ao enviar null: {e}")
+
+                    self._last_lot = None  # Reset lote ao sair do ar
+
+                if self._last_on_air != on_air:
+                    state = "🟢 NO AR" if on_air else "⚫ FORA DO AR"
+                    self.on_log(f"{state}")
+                self._last_on_air = on_air
+
+                # Se não está no ar, não monitorar mudanças de lote
+                if not on_air:
+                    consecutive_errors = 0
+                    time.sleep(self._poll_interval)
+                    continue
 
                 # Ler campo de lote (gatilho)
                 current_lot = get_field_value(root, title_key, field_lot) or ""
