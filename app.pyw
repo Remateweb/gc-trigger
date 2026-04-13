@@ -182,12 +182,12 @@ class App(ctk.CTk):
 
         self.stop_btn = ctk.CTkButton(
             btn_frame, text="⏹ Parar",
-            font=("Inter", 14, "bold"), height=48,
+            font=("Inter", 14, "bold"), height=48, width=120,
             fg_color=RED, hover_color="#FF4444", text_color="#FFF",
             state="disabled",
             command=self._stop_monitoring,
         )
-        self.stop_btn.pack(side="left", width=120)
+        self.stop_btn.pack(side="left")
 
         # ── Card: Log
         card_log = self._card(scroll, "📋 Log de Eventos")
