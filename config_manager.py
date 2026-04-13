@@ -11,7 +11,7 @@ DEFAULT_CONFIG = {
     "api_key": "0c18ab41-eb23-4782-8e3f-34582fad10b6",
     "api_url": "https://test.api-net9.remateweb.com/api/ocr/bid",
     "selected_title": "",
-    "field_auction_id": "",
+    "auction_id": "",
     "field_lot_number": "",
     "field_value": "",
     "field_payment_condition": "",
